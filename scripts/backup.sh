@@ -133,7 +133,7 @@ echo "" >> "$BACKUPLIST"
 doLog ""
 doLog "Executing pre-backup scripts"
 # Output to log file
-docker-compose logs --no-color >> "$LOGFILE"
+docker-compose logs --no-color --tail="50" >> "$LOGFILE"
 doLog "$(bash ./scripts/backup_restore/pre_backup_complete.sh)"
 
 echo "./services/" >> "$BACKUPLIST"
@@ -176,7 +176,7 @@ doLog ""
 
 doLog "Executing post-backup scripts"
 # Output to log file
-docker-compose logs --no-color >> "$LOGFILE"
+docker-compose logs --no-color --tail="50" >> "$LOGFILE"
 doLog "$(bash ./scripts/backup_restore/post_backup_complete.sh)"
 doLog ""
 
