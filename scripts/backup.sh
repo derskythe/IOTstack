@@ -53,7 +53,7 @@ fi
 # 1 = console and file
 VERBOSE=true
 # But we can't do it here thus too many positional args
-# changing will broke compartibility
+# changing will broke compatibility
 #while getopts "v" OPTION
 #do
 #  case $OPTION in
@@ -95,7 +95,7 @@ doLog(){
   then
     MSG=$(echo "$*")
   else
-    MSG=$(echo "`date '+%Y.%m.%dT%H:%M:%S'` - ""$*")
+    MSG=$(echo "$(date '+%Y.%m.%dT%H:%M:%S') - ""$*")
   fi
   # with colors code it's looks very ugly
   # taken from: https://stackoverflow.com/a/51141872/660753
@@ -109,12 +109,12 @@ doLog(){
   fi
 
   # write to LOGFILE
-  echo "$MSG" >> $LOGFILE
+  echo "$MSG" >> "$LOGFILE"
 }
 #eof func doLog
 
-touch $LOGFILE
-doLog ""  > $LOGFILE
+touch "$LOGFILE"
+doLog ""
 doLog "### IOTstack backup generator log ###"
 doLog "Started At: $(date +"%Y-%m-%dT%H-%M-%S")"
 doLog "Current Directory: $(pwd)"
@@ -128,40 +128,42 @@ if [[ "$BACKUPTYPE" -eq "2" || "$BACKUPTYPE" -eq "3" ]]; then
   doLog "Rolling File: $ROLLING"
 fi
 
-echo "" >> $BACKUPLIST
+echo "" >> "$BACKUPLIST"
 
 doLog ""
-doLog "Executing prebackup scripts"
+doLog "Executing pre-backup scripts"
 # Output to log file
-docker-compose logs --no-color >> $LOGFILE
-doLog $(bash ./scripts/backup_restore/pre_backup_complete.sh)
+docker-compose logs --no-color >> "$LOGFILE"
+doLog "$(bash ./scripts/backup_restore/pre_backup_complete.sh)"
 
-echo "./services/" >> $BACKUPLIST
-echo "./volumes/" >> $BACKUPLIST
-[ -f "./docker-compose.yml" ] && echo "./docker-compose.yml" >> $BACKUPLIST
-[ -f "./compose-override.yml" ] && echo "./compose-override.yml" >> $BACKUPLIST
-[ -f "./extra" ] && echo "./extra" >> $BACKUPLIST
-[ -f "./.tmp/databases_backup" ] && echo "./.tmp/databases_backup" >> $BACKUPLIST
-[ -f "./postbuild.sh" ] && echo "./postbuild.sh" >> $BACKUPLIST
-[ -f "./post_backup.sh" ] && echo "./post_backup.sh" >> $BACKUPLIST
-[ -f "./pre_backup.sh" ] && echo "./pre_backup.sh" >> $BACKUPLIST
+echo "./services/" >> "$BACKUPLIST"
+echo "./volumes/" >> "$BACKUPLIST"
+[ -f "./docker-compose.yml" ] && echo "./docker-compose.yml" >> "$BACKUPLIST"
+[ -f "./compose-override.yml" ] && echo "./compose-override.yml" >> "$BACKUPLIST"
+[ -f "./extra" ] && echo "./extra" >> "$BACKUPLIST"
+[ -f "./.tmp/databases_backup" ] && echo "./.tmp/databases_backup" >> "$BACKUPLIST"
+[ -f "./postbuild.sh" ] && echo "./postbuild.sh" >> "$BACKUPLIST"
+[ -f "./post_backup.sh" ] && echo "./post_backup.sh" >> "$BACKUPLIST"
+[ -f "./pre_backup.sh" ] && echo "./pre_backup.sh" >> "$BACKUPLIST"
 
 doLog "Create temporary backup archive"
-doLog $(sudo tar -czf $TMPBACKUPFILE -T $BACKUPLIST 2>&1)
+doLog "$(sudo tar -czf "$TMPBACKUPFILE" -T "$BACKUPLIST" 2>&1)"
 
-[ -f "$ROLLING" ] && ROLLINGOVERWRITTEN=1 && rm -rf $ROLLING
+[ -f "$ROLLING" ] && ROLLINGOVERWRITTEN=1 && rm -rf "$ROLLING"
 
-doLog $(sudo chown -R $USER:$USER $TMPDIR/backup* 2>&1 )
+doLog "$(sudo chown -R "$USER":"$USER" $TMPDIR/backup* 2>&1 )"
 
 doLog "Create persistent backup archive"
 if [[ "$BACKUPTYPE" -eq "1" || "$BACKUPTYPE" -eq "3" ]]; then
-  cp $TMPBACKUPFILE $BACKUPFILE
+  # TODO: Double check do we really need a copy instead of move?
+  cp "$TMPBACKUPFILE" "$BACKUPFILE"
 fi
 if [[ "$BACKUPTYPE" -eq "2" || "$BACKUPTYPE" -eq "3" ]]; then
-  cp $TMPBACKUPFILE $ROLLING
+  cp "$TMPBACKUPFILE" "$ROLLING"
 fi
 
 if [[ "$BACKUPTYPE" -eq "2" || "$BACKUPTYPE" -eq "3" ]]; then
+  # TODO: $ROLLINGOVERWRITTEN is not set!
   if [[ "$ROLLINGOVERWRITTEN" -eq 1 ]]; then
     doLog "Rolling Overwritten: True"
   else
@@ -169,13 +171,13 @@ if [[ "$BACKUPTYPE" -eq "2" || "$BACKUPTYPE" -eq "3" ]]; then
   fi
 fi
 
-doLog "Backup Size (bytes): $(stat --printf="%s" $TMPBACKUPFILE)"
+doLog "Backup Size (bytes): $(stat --printf="%s" "$TMPBACKUPFILE")"
 doLog ""
 
-doLog "Executing postbackup scripts"
+doLog "Executing post-backup scripts"
 # Output to log file
-docker-compose logs --no-color >> $LOGFILE
-doLog $(bash ./scripts/backup_restore/post_backup_complete.sh)
+docker-compose logs --no-color >> "$LOGFILE"
+doLog "$(bash ./scripts/backup_restore/post_backup_complete.sh)"
 doLog ""
 
 doLog "Finished At: $(date +"%Y-%m-%dT%H-%M-%S")"
@@ -183,12 +185,12 @@ doLog ""
 
 if [[ -f "$TMPBACKUPFILE" ]]; then
   doLog "Items backed up:"
-  doLog $(cat $BACKUPLIST 2>&1)
+  doLog "$(cat "$BACKUPLIST" 2>&1)"
   doLog ""
   doLog "Items Excluded:"
   doLog " - No items"
-  doLog $(rm -rf $BACKUPLIST 2>&1)
-  doLog $(rm -rf $TMPBACKUPFILE 2>&1)
+  doLog "$(rm -rf "$BACKUPLIST" 2>&1)"
+  doLog "$(rm -rf "$TMPBACKUPFILE" 2>&1)"
 else
   doLog "Something went wrong backing up. The temporary backup file doesn't exist. No temporary files were removed"
   doLog "Files: "
@@ -200,4 +202,4 @@ doLog "### End of log ###"
 doLog ""
 
 # we don't need to print LOGFILE if we are in verbose mode
-$VERBOSE && echo "" || cat $LOGFILE
+$VERBOSE != true && cat "$LOGFILE"
