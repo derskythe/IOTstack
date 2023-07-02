@@ -13,7 +13,7 @@ mkdocs-material-extensions==1.0.3
 mkdocs-pagenav-generator @ git+https://github.com/Andre601/mkdocs-pagenav-generator@acb5b1561695e8f69d67fda029779f40e4b0beef
 mkdocs-redirects==1.0.3
 packaging==21.3
-Pygments==2.12.0
+Pygments==2.15.0
 pymdown-extensions==9.4
 pyparsing==3.0.7
 python-dateutil==2.8.2
