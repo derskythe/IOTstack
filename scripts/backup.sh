@@ -139,6 +139,7 @@ doLog "$(bash ./scripts/backup_restore/pre_backup_complete.sh)"
 echo "./services/" >> "$BACKUPLIST"
 echo "./volumes/" >> "$BACKUPLIST"
 [ -f "./docker-compose.yml" ] && echo "./docker-compose.yml" >> "$BACKUPLIST"
+[ -f "./docker-compose.override.yml" ] && echo "./docker-compose.yml" >> "$BACKUPLIST"
 [ -f "./compose-override.yml" ] && echo "./compose-override.yml" >> "$BACKUPLIST"
 [ -f "./extra" ] && echo "./extra" >> "$BACKUPLIST"
 [ -f "./.tmp/databases_backup" ] && echo "./.tmp/databases_backup" >> "$BACKUPLIST"
@@ -155,7 +156,6 @@ doLog "$(sudo chown -R "$USER":"$USER" $TMPDIR/backup* 2>&1 )"
 
 doLog "Create persistent backup archive"
 if [[ "$BACKUPTYPE" -eq "1" || "$BACKUPTYPE" -eq "3" ]]; then
-  # TODO: Double check do we really need a copy instead of move?
   cp "$TMPBACKUPFILE" "$BACKUPFILE"
 fi
 if [[ "$BACKUPTYPE" -eq "2" || "$BACKUPTYPE" -eq "3" ]]; then
@@ -163,7 +163,6 @@ if [[ "$BACKUPTYPE" -eq "2" || "$BACKUPTYPE" -eq "3" ]]; then
 fi
 
 if [[ "$BACKUPTYPE" -eq "2" || "$BACKUPTYPE" -eq "3" ]]; then
-  # TODO: $ROLLINGOVERWRITTEN is not set!
   if [[ "$ROLLINGOVERWRITTEN" -eq 1 ]]; then
     doLog "Rolling Overwritten: True"
   else
