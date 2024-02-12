@@ -5,7 +5,12 @@
 /.tmp/*
 __pycache__
 docker-compose.yml
+docker-compose.override.yml
 compose-override.yml
+build-installer.sh
+docker-compose-base.yml
+build-options.json
+iotstack_build_*.zip
 postbuild.sh
 pre_backup.sh
 post_backup.sh
@@ -15,9 +20,12 @@ post_restore.sh
 .docker_notinstalled
 .docker_outofdate
 .new_install
+.installed
+.env
 
 !.gitkeep
 
 .vscode
+.idea
 *.code-workspace
 
