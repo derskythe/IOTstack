@@ -246,18 +246,18 @@ The `grep` strips comment lines and the `sudo tee` is a safe way of appending th
 
 ## Getting a clean slate { #cleanSlate }
 
-### Erasing the persistent storage area { #resetDB }
+### Erasing the persistent storage area { #zapStore }
 
 Erasing Telegraf's persistent storage area triggers self-healing and restores known defaults:
 
 ``` console
 $ cd ~/IOTstack
-$ docker-compose rm --force --stop -v telegraf
+$ docker-compose down telegraf
 $ sudo rm -rf ./volumes/telegraf
 $ docker-compose up -d telegraf
 ```
 
-Note:
+Notes:
 
 * You can also remove individual files within the persistent storage area and then trigger self-healing. For example, if you decide to edit `telegraf-reference.conf` and make a mess, you can restore the original version like this:
 
@@ -267,13 +267,15 @@ Note:
 	$ docker-compose restart telegraf
 	```
 
+* See also [if downing a container doesn't work](../Basic_setup/index.md/#downContainer)
+
 ### Resetting the InfluxDB database { #resetDB }
 
 To reset the InfluxDB database that Telegraf writes into, proceed like this:
 
 ``` console
 $ cd ~/IOTstack
-$ docker-compose rm --force --stop -v telegraf
+$ docker-compose down telegraf
 $ docker exec -it influxdb influx -precision=rfc3339
 > drop database telegraf
 > exit
@@ -283,7 +285,7 @@ $ docker-compose up -d telegraf
 In words:
 
 * Be in the right directory.
-* Stop the Telegraf container (while leaving the InfluxDB container running).
+* Stop the Telegraf container (while leaving the InfluxDB container running). See also [if downing a container doesn't work](../Basic_setup/index.md/#downContainer).
 * Launch the Influx CLI inside the InfluxDB container.
 * Delete the `telegraf` database, and then exit the CLI.
 * Start the Telegraf container. This re-creates the database automatically. 
