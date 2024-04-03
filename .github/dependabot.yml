@@ -4,20 +4,52 @@
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
 version: 2
+registries:
+  dockerhub:
+    type: docker-registry
+    url: registry.hub.docker.com
+    username: ${{secrets.DOCKER_USER}}
+    password: ${{secrets.DOCKER_PASS}}
 updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/.github"
     schedule:
       interval: "weekly"
+    assignees:
+      - "derskythe"
       
   - package-ecosystem: "composer" # See documentation for possible values
     directory: "/.templates" # Location of package manifests
     schedule:
       interval: "weekly"
+    assignees:
+      - "derskythe"
 
-  # Maintain dependencies for dotnet
   - package-ecosystem: "pip"
     directory: "/scripts"
     schedule:
       interval: "weekly"
+    assignees:
+      - "derskythe"
+
+  - package-ecosystem: "pipenv"
+    directory: "/scripts"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "derskythe"
+
+  - package-ecosystem: "docker"
+    directory: "./templates"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "derskythe"
+
+  - package-ecosystem: "beta-ecosystem"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "derskythe"
