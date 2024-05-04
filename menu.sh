@@ -11,7 +11,7 @@ REQ_PYTHON_VERSION=3.6.9
 
 PYTHON_CMD=python3
 
-sys_arch=$(uname -m)
+#sys_arch=$(uname -m)
 
 # ----------------------------------------------
 # Helper functions
@@ -20,13 +20,15 @@ function command_exists() {
 	command -v "$@" > /dev/null 2>&1
 }
 
-function user_in_group()
-{
+function user_in_group() {
     # see if the group exists
     grep -q "^$1:" /etc/group;
 
     # sense that the group does not exist
-    if [ $? -ne 0 ]; then return 0; fi
+    CMD_RESULT=$?
+    if [ "$CMD_RESULT" -ne 0 ]; then
+      return 0;
+    fi
 
     # group exists - now check that the user is a member
     groups | grep -q "\b$1\b"
@@ -74,7 +76,7 @@ function minimum_version_check() {
 		return 1
 	fi
 
-	if [ "${CURR_VERSION_MAJOR}" -ge $REQ_MIN_VERSION_MAJOR ]; then
+	if [ "${CURR_VERSION_MAJOR}" -ge "$REQ_MIN_VERSION_MAJOR" ]; then
 		VERSION_GOOD="true"
 		echo "$VERSION_GOOD"
 		return 0
@@ -82,8 +84,8 @@ function minimum_version_check() {
 		VERSION_GOOD="false"
 	fi
 
-	if [ "${CURR_VERSION_MAJOR}" -ge $REQ_MIN_VERSION_MAJOR ] && \
-		[ "${CURR_VERSION_MINOR}" -ge $REQ_MIN_VERSION_MINOR ]; then
+	if [ "${CURR_VERSION_MAJOR}" -ge "$REQ_MIN_VERSION_MAJOR" ] && \
+		[ "${CURR_VERSION_MINOR}" -ge "$REQ_MIN_VERSION_MINOR" ]; then
 		VERSION_GOOD="true"
 		echo "$VERSION_GOOD"
 		return 0
@@ -91,9 +93,9 @@ function minimum_version_check() {
 		VERSION_GOOD="false"
 	fi
 
-	if [ "${CURR_VERSION_MAJOR}" -ge $REQ_MIN_VERSION_MAJOR ] && \
-		[ "${CURR_VERSION_MINOR}" -ge $REQ_MIN_VERSION_MINOR ] && \
-		[ "${CURR_VERSION_BUILD}" -ge $REQ_MIN_VERSION_BUILD ]; then
+	if [ "${CURR_VERSION_MAJOR}" -ge "$REQ_MIN_VERSION_MAJOR" ] && \
+		[ "${CURR_VERSION_MINOR}" -ge "$REQ_MIN_VERSION_MINOR" ] && \
+		[ "${CURR_VERSION_BUILD}" -ge "$REQ_MIN_VERSION_BUILD" ]; then
 		VERSION_GOOD="true"
 		echo "$VERSION_GOOD"
 		return 0
@@ -104,9 +106,8 @@ function minimum_version_check() {
 	echo "$VERSION_GOOD"
 }
 
-function user_in_group()
-{
-	if grep -q $1 /etc/group ; then
+function user_in_group() {
+	if grep -q "$1" /etc/group ; then
 		if id -nGz "$USER" | grep -qzxF "$1";	then
 				echo "true"
 		else
@@ -117,9 +118,10 @@ function user_in_group()
 	fi
 }
 
-function check_git_updates()
-{
-	UPSTREAM=${1:-'@{u}'}
+function check_git_updates() {
+	#UPSTREAM=${1:-'@{u}'}
+	# Args not passed in, so using default value
+	UPSTREAM='@{u}'
 	LOCAL=$(git rev-parse @)
 	REMOTE=$(git rev-parse "$UPSTREAM")
 	BASE=$(git merge-base @ "$UPSTREAM")
@@ -134,13 +136,16 @@ function check_git_updates()
 			echo "Diverged"
 	fi
 }
+
 function install_python3_and_deps() {
 	CURR_PYTHON_VER="${1:-Unknown}"
 	CURR_VIRTUALENV="${2:-Unknown}"
-	if (whiptail --title "Python 3 and virtualenv" --yesno "Python 3.6.9 or later (Current = $CURR_PYTHON_VER) and virtualenv (Installed = $CURR_VIRTUALENV) are required for IOTstack to function correctly. Install these now?" 20 78); then
+	MSG="Python 3.6.9 or later (Current = $CURR_PYTHON_VER) and virtualenv (Installed = $CURR_VIRTUALENV) are required for IOTstack to function correctly. Install these now?"
+	if (whiptail --title "Python 3 and virtualenv" --yesno "$MSG" 20 78); then
 		sudo apt update
 		sudo apt install -y python3-dev python3-virtualenv
-		if [ $? -eq 0 ]; then
+		CMD_RESULT=$?
+    if [ "$CMD_RESULT" -eq 0 ]; then
 			PYTHON_VERSION_GOOD="true"
 		else
 			echo "Failed to install Python and virtualenv" >&2
@@ -158,7 +163,7 @@ function update_docker() {
 }
 
 function update_project() {
-	git pull origin $CURRENT_BRANCH
+	git pull origin "$CURRENT_BRANCH"
 	git status
 }
 
@@ -168,6 +173,7 @@ function do_python3_checks() {
 		VIRTUALENV_GOOD="true"
 		echo "Python virtualenv found." >&2
 	fi
+
 	PYTHON_VERSION_GOOD="false"
 	if command_exists $PYTHON_CMD; then
 		PYTHON_VERSION=$($PYTHON_CMD --version 2>/dev/null)
@@ -175,8 +181,9 @@ function do_python3_checks() {
 		PYTHON_VERSION_MINOR=$(echo "$PYTHON_VERSION"| cut -d' ' -f 2 | cut -d'.' -f 2)
 		PYTHON_VERSION_BUILD=$(echo "$PYTHON_VERSION"| cut -d' ' -f 2 | cut -d'.' -f 3)
 
-		printf "Python Version: '${PYTHON_VERSION:-Unknown}'. "
-		if [ "$(minimum_version_check $REQ_PYTHON_VERSION $PYTHON_VERSION_MAJOR $PYTHON_VERSION_MINOR $PYTHON_VERSION_BUILD)" == "true" -a "$VIRTUALENV_GOOD" == "true" ]; then
+		printf "Python Version: '%s'. " "${PYTHON_VERSION:-Unknown}"
+		MIN_VERSION_CHECK=$(minimum_version_check "$REQ_PYTHON_VERSION" "$PYTHON_VERSION_MAJOR" "$PYTHON_VERSION_MINOR" "$PYTHON_VERSION_BUILD")
+		if [ "$MIN_VERSION_CHECK" == "true" ] && [ "$VIRTUALENV_GOOD" == "true" ]; then
 			PYTHON_VERSION_GOOD="true"
 			echo "Python and virtualenv is up to date." >&2
 		else
@@ -192,18 +199,24 @@ function do_python3_checks() {
 
 function do_env_setup() {
 	echo "Setting up environment:"
+
+	if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+    echo "Run env setup as ROOT" >&2
+    return 0
+  fi
+
 	if [[ ! "$(user_in_group bluetooth)" == "notgroup" ]] && [[ ! "$(user_in_group bluetooth)" == "true" ]]; then
     echo "User is NOT in 'bluetooth' group. Adding:" >&2
     echo "sudo usermod -G bluetooth -a $USER" >&2
 		echo "You will need to restart your system before the changes take effect."
-		sudo usermod -G "bluetooth" -a $USER
+		sudo usermod -G "bluetooth" -a "$USER"
 	fi
 
 	if [ ! "$(user_in_group docker)" == "true" ]; then
     echo "User is NOT in 'docker' group. Adding:" >&2
     echo "sudo usermod -G docker -a $USER" >&2
 		echo "You will need to restart your system before the changes take effect."
-		sudo usermod -G "docker" -a $USER
+		sudo usermod -G "docker" -a "$USER"
 	fi
 }
 
@@ -236,8 +249,9 @@ function do_docker_checks() {
 		DOCKER_VERSION_BUILD=$(echo "$DOCKER_VERSION_BUILD"| cut -f1 -d"-")
 		DOCKER_VERSION_BUILD=$(echo "$DOCKER_VERSION_BUILD"| cut -f1 -d"+")
 
-		if [ "$(minimum_version_check $REQ_DOCKER_VERSION $DOCKER_VERSION_MAJOR $DOCKER_VERSION_MINOR $DOCKER_VERSION_BUILD )" == "true" ]; then
-			[ -f .docker_outofdate ] && rm .docker_outofdate
+    MIN_VERSION_CHECK=$(minimum_version_check "$REQ_DOCKER_VERSION" "$DOCKER_VERSION_MAJOR" "$DOCKER_VERSION_MINOR" "$DOCKER_VERSION_BUILD")
+		if [ "$MIN_VERSION_CHECK" == "true" ]; then
+			[ -f .docker_outofdate ] && rm -f .docker_outofdate
 			DOCKER_VERSION_GOOD="true"
 			echo "Docker version $DOCKER_VERSION >= $REQ_DOCKER_VERSION. Docker is good to go." >&2
 		else
@@ -250,24 +264,28 @@ function do_docker_checks() {
 			fi
 		fi
 	else
-		[ -f .docker_outofdate ] && rm .docker_outofdate
+		[ -f .docker_outofdate ] && rm -f .docker_outofdate
 		echo "Docker not installed" >&2
 		if [ ! -f .docker_notinstalled ]; then
 			if (whiptail --title "Docker and Docker-Compose" --yesno "Docker is not currently installed, and is required to run IOTstack. Would you like to install docker and docker-compose now?\nYou will not be prompted again." 20 78); then
-					[ -f .docker_notinstalled ] && rm .docker_notinstalled
+					[ -f .docker_notinstalled ] && rm -f .docker_notinstalled
 					echo "Setting up environment:"
-					if [[ ! "$(user_in_group bluetooth)" == "notgroup" ]] && [[ ! "$(user_in_group bluetooth)" == "true" ]]; then
-						echo "User is NOT in 'bluetooth' group. Adding:" >&2
-						echo "sudo usermod -G bluetooth -a $USER" >&2
-						echo "You will need to restart your system before the changes take effect."
-						sudo usermod -G "bluetooth" -a $USER
-					fi
+					if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+            echo "Run env setup as ROOT" >&2
+          else
+					  if [[ ! "$(user_in_group bluetooth)" == "notgroup" ]] && [[ ! "$(user_in_group bluetooth)" == "true" ]]; then
+						  echo "User is NOT in 'bluetooth' group. Adding:" >&2
+						  echo "sudo usermod -G bluetooth -a $USER" >&2
+						  echo "You will need to restart your system before the changes take effect."
+						  sudo usermod -G "bluetooth" -a "$USER"
+					  fi
 
-					if [ ! "$(user_in_group docker)" == "true" ]; then
-						echo "User is NOT in 'docker' group. Adding:" >&2
-						echo "sudo usermod -G docker -a $USER" >&2
-						echo "You will need to restart your system before the changes take effect."
-						sudo usermod -G "docker" -a $USER
+					  if [ ! "$(user_in_group docker)" == "true" ]; then
+  						echo "User is NOT in 'docker' group. Adding:" >&2
+	  					echo "sudo usermod -G docker -a $USER" >&2
+		  				echo "You will need to restart your system before the changes take effect."
+			  			sudo usermod -G "docker" -a "$USER"
+				  	fi
 					fi
 					install_docker
 				else
@@ -279,7 +297,7 @@ function do_docker_checks() {
 
 function do_project_checks() {
 	echo "Checking for project update" >&2
-	git fetch origin $CURRENT_BRANCH
+	git fetch origin "$CURRENT_BRANCH"
 
 	if [[ "$(check_git_updates)" == "Need to pull" ]]; then
 		echo "An update is available for IOTstack" >&2
@@ -291,13 +309,18 @@ function do_project_checks() {
 			fi
 		fi
 	else
-		[ -f .project_outofdate ] && rm .project_outofdate
+		[ -f .project_outofdate ] && rm -f .project_outofdate
 		echo "Project is up to date" >&2
 	fi
 }
 
 function do_env_checks() {
 	GROUPSGOOD=0
+
+	if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+    echo "Run env checks as ROOT" >&2
+    return $GROUPSGOOD
+  fi
 
 	if [[ ! "$(user_in_group bluetooth)" == "notgroup" ]] && [[ ! "$(user_in_group bluetooth)" == "true" ]]; then
 	  GROUPSGOOD=1
@@ -324,7 +347,11 @@ else
 	do_project_checks
 	do_env_checks
 	do_python3_checks
-	echo "Please enter sudo pasword if prompted"
+	if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+    echo "Warning: Running as ROOT." >&2
+  else
+	  echo "Please enter sudo password if prompted"
+	fi
 	do_docker_checks
 
 	if [[ "$DOCKER_VERSION_GOOD" == "true" ]] && \
@@ -348,18 +375,22 @@ do
 			;;
 		--run-env-setup) # Sudo cannot be run from inside functions.
 				echo "Setting up environment:"
-				if [[ ! "$(user_in_group bluetooth)" == "notgroup" ]] && [[ ! "$(user_in_group bluetooth)" == "true" ]]; then
-					echo "User is NOT in 'bluetooth' group. Adding:" >&2
-					echo "sudo usermod -G bluetooth -a $USER" >&2
-					echo "You will need to restart your system before the changes take effect."
-					sudo usermod -G "bluetooth" -a $USER
-				fi
+				if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+          echo "Run env setup as ROOT. Step is skipped" >&2
+        else
+          if [[ ! "$(user_in_group bluetooth)" == "notgroup" ]] && [[ ! "$(user_in_group bluetooth)" == "true" ]]; then
+            echo "User is NOT in 'bluetooth' group. Adding:" >&2
+            echo "sudo usermod -G bluetooth -a $USER" >&2
+            echo "You will need to restart your system before the changes take effect."
+            sudo usermod -G "bluetooth" -a "$USER"
+          fi
 
-				if [ ! "$(user_in_group docker)" == "true" ]; then
-					echo "User is NOT in 'docker' group. Adding:" >&2
-					echo "sudo usermod -G docker -a $USER" >&2
-					echo "You will need to restart your system before the changes take effect."
-					sudo usermod -G "docker" -a $USER
+          if [ ! "$(user_in_group docker)" == "true" ]; then
+            echo "User is NOT in 'docker' group. Adding:" >&2
+            echo "sudo usermod -G docker -a $USER" >&2
+            echo "You will need to restart your system before the changes take effect."
+            sudo usermod -G "docker" -a "$USER"
+          fi
 				fi
 			;;
 		--encoding) ENCODING_TYPE=$2
@@ -401,4 +432,7 @@ else
 fi
 
 # Hand control to new menu
-$PYTHON_CMD ./scripts/menu_main.py $ENCODING_TYPE
+$PYTHON_CMD ./scripts/menu_main.py "$ENCODING_TYPE"
+CMD_RESULT=$?
+
+exit $CMD_RESULT
