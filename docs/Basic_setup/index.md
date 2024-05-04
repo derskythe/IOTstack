@@ -151,7 +151,8 @@ monitoring of docker resource usage by the telegraf container.
 Enable by running (takes effect after reboot):
 
 ``` console
-$ echo $(cat /boot/cmdline.txt) cgroup_memory=1 cgroup_enable=memory | sudo tee /boot/cmdline.txt
+$ CMDLINE="/boot/firmware/cmdline.txt" && [ -e "$CMDLINE" ] || CMDLINE="/boot/cmdline.txt"
+$ echo $(cat "$CMDLINE") cgroup_memory=1 cgroup_enable=memory | sudo tee "$CMDLINE"
 $ sudo reboot
 ```
 

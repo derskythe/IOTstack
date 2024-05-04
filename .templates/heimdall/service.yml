@@ -8,7 +8,7 @@ heimdall:
   volumes:
     - ./volumes/heimdall/config:/config
   ports:
-    - 8882:80
-    - 8883:443
+    - "8882:80"
+    - "8883:443"
   restart: unless-stopped
 

@@ -187,50 +187,47 @@ If problems persist even when the `dhcpcd` patch is in place, you *may* have an 
 4. Substitute the values of *«idVendor»* and *«idProduct»* into the following command template:
 
 	``` console
-	sed -i.bak '1s/^/usb-storage.quirks=«idVendor»:«idProduct»:u /' /boot/cmdline.txt
+	sed -i.bak '1s/^/usb-storage.quirks=«idVendor»:«idProduct»:u /' "$CMDLINE"
 	```
 
 	This is known as a "quirks string". Given the `dmesg` output above, the string would be:
 
 	``` console
-	sed -i.bak '1s/^/usb-storage.quirks=f0a1:f1b2:u /' /boot/cmdline.txt
+	sed -i.bak '1s/^/usb-storage.quirks=f0a1:f1b2:u /' "$CMDLINE"
 	```
 	
 	Make sure that you keep the <kbd>space</kbd> between the `:u` and `/'`. You risk breaking your system if that <kbd>space</kbd> is not there.
 
-5. Run the command you prepared in step 4 using `sudo`:
+5. Run these commands - the second line is the one you prepared in step 4 using `sudo`:
 
 	``` console
-	$ sudo sed -i.bak '1s/^/usb-storage.quirks=f0a1:f1b2:u /' /boot/cmdline.txt
+	$ CMDLINE="/boot/firmware/cmdline.txt" && [ -e "$CMDLINE" ] || CMDLINE="/boot/cmdline.txt"
+	$ sudo sed -i.bak '1s/^/usb-storage.quirks=f0a1:f1b2:u /' "$CMDLINE"
 	```
 	
 	The command:
 	
-	- makes a backup copy of `/boot/cmdline.txt` as `/boot/cmdline.txt.bak`
-	- inserts the quirks string at the start of `/boot/cmdline.txt`.
+	- makes a backup copy of `cmdline.txt` as `cmdline.txt.bak`
+	- inserts the quirks string at the start of `cmdline.txt`.
 
 	You can confirm the result as follows:
 	
 	* display the original (baseline reference):
 
 		```
-		$ cat /boot/cmdline.txt.bak
+		$ cat "$CMDLINE.bak"
 		console=serial0,115200 console=tty1 root=PARTUUID=06c69364-02 rootfstype=ext4 fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles
 		```
 
 	* display the modified version:
 
 		```
-		$ cat /boot/cmdline.txt
+		$ cat "$CMDLINE"
 		usb-storage.quirks=f0a1:f1b2:u console=serial0,115200 console=tty1 root=PARTUUID=06c69364-02 rootfstype=ext4 fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles
 		```
 
 6. Shutdown your Pi.
 7. Connect your SSD to a USB3 port and apply power.
-
-Note:
-
-* If your Pi fails to boot and you suspect that the quirks string might be the culprit, don't forget that you can always mount the `boot` partition on a support host (Linux, macOS, Windows) where you can undo the change by replacing `cmdline.txt` with `cmdline.txt.bak`.
 
 There is more information about this problem [on the Raspberry Pi forum](https://forums.raspberrypi.com/viewtopic.php?t=245931&sid=66012d5cf824004bbb414cb84874c8a4).
 
