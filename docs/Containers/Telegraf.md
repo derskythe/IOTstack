@@ -219,9 +219,12 @@ $ docker-compose restart telegraf
 * `inputs.docker.conf` instructs Telegraf to collect metrics from Docker. Requires kernel control
   groups to be enabled to collect memory usage data. If not done during initial installation,
   enable by running (reboot required):
-  ``` console
-  $ echo $(cat /boot/cmdline.txt) cgroup_memory=1 cgroup_enable=memory | sudo tee /boot/cmdline.txt
-  ```
+
+	``` console
+	$ CMDLINE="/boot/firmware/cmdline.txt" && [ -e "$CMDLINE" ] || CMDLINE="/boot/cmdline.txt"
+	$ echo $(cat "$CMDLINE") cgroup_memory=1 cgroup_enable=memory | sudo tee "$CMDLINE"
+	```
+
 * `inputs.cpu_temp.conf` collects cpu temperature.
  
 ### Applying optional additions { #optionalAdditions }

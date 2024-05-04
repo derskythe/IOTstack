@@ -403,7 +403,8 @@ sudo rm -rf "$IOTSTACK_MENU_VENV_DIR"
 #----------------------------------------------------------------------
 
 # set cmdline options (if possible - Raspberry Pi dependency)
-TARGET="/boot/cmdline.txt"
+TARGET="/boot/firmware/cmdline.txt"
+[ -e "$TARGET" ] || TARGET="/boot/cmdline.txt"
 if [ -e "$TARGET" ] ; then
 	echo -e -n "\nChecking Raspberry Pi boot-time options - "
 	unset APPEND
