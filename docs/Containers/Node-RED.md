@@ -278,7 +278,7 @@ The third method is *portable*, meaning a flow can conceptually refer to "this" 
 
 	``` yaml
 	extra_hosts:
-	- "host.docker.internal:host-gateway"
+	  - "host.docker.internal:host-gateway"
 	```
 
 	If you use this method, your flows can refer to "this" host using the domain name "host.docker.internal".
@@ -436,7 +436,9 @@ To communicate with your Raspberry Pi's GPIO you need to do the following:
 	
 	Don't try to use 127.0.0.1 because that is the loopback address of the Node-RED container.
 
-## Serial Port Access { #accessSerial }
+## Serial Devices { #accessSerial }
+
+### USB devices { #usbSerial }
 
 Node-RED running in a container *can* communicate with serial devices attached to your Raspberry Pi's USB ports. However, it does not work "out of the box". You need to set it up.
 
@@ -452,7 +454,6 @@ You have three basic options:
 
 	``` yaml
 	devices:
-	- …
 	  - "/dev/ttyUSB0:/dev/ttyUSB0"
 	```
 
@@ -477,8 +478,7 @@ You have three basic options:
 
 		``` yaml
 		volumes:
-		- …
-		- /dev:/dev:ro
+		  - /dev:/dev:ro
 		```
 
 		> The "read-only" flag (`:ro`) prevents the container from doing dangerous things like destroying your Raspberry Pi's SD or SSD. Please don't omit that flag!
@@ -496,8 +496,8 @@ You have three basic options:
 
 		```	 yaml
 		device_cgroup_rules:
-		- 'c 1:* rw' # access to devices like /dev/null
-		- 'c 188:* rmw' # change numbers to your device
+		  - 'c 1:* rw' # access to devices like /dev/null
+		  - 'c 188:* rmw' # change numbers to your device
 		```
 
 		In the above:
@@ -524,6 +524,102 @@ At the time of writing (Feb 2023), it was not possible to add `node-red-node-ser
 ``` Dockerfile
 RUN npm install node-red-node-serialport --build-from-source
 ```
+
+### hardware serial port { #piSerial }
+
+Historically, `/dev/ttyAMA0` referred to the Raspberry Pi's serial port. The situation became less straightforward once Pis gained Bluetooth capabilities:
+
+* On Pis *without* Bluetooth hardware:
+
+	- `/dev/ttyAMA0` means the serial port; and
+	- `/dev/serial0` is a symlink to `/dev/ttyAMA0`
+
+* On Pis *with* Bluetooth capabilities:
+
+	- `/dev/ttyS0` means the serial port; and
+	- `/dev/serial0` is a symlink to `/dev/ttyS0`
+
+	In addition, whether `/dev/ttyS0` (and, therefore, `/dev/serial0`) are present at runtime depends on adding the following line to `config.txt`:
+
+	```
+	enable_uart=1
+	```
+
+	And, if that isn't sufficiently confusing, the location of `config.txt` depends on the OS version:
+	
+	* Bullseye (and earlier): `/boot/config.txt`
+	* Bookworm: `/boot/firmware/config.txt`
+
+Rolling all that together, if you want access to the hardware serial port from Node-RED, you need to:
+
+1. Add `enable_uart=1` to `config.txt`.
+2. Reboot.
+3. Add a device-mapping to Node-RED's service definition:
+
+	``` yaml
+	devices:
+	  - /dev/serial0:/dev/«internalDevice»
+	```
+	
+	where `«internalDevice»` is whatever device the add-on node you're using is expecting, such as `ttyAMA0`.
+
+4. Recreate the Node-RED container by running:
+
+	``` console
+	$ cd ~/IOTstack
+	$ docker-compose up -d nodered
+	```
+	
+### Bluetooth device { #bluetoothSupport }
+
+If you enable the `node-red-contrib-generic-ble` add on node, you will also need to make the following changes:
+
+1. If you are running Bookworm, you will need to use `sudo` to edit this file:
+
+	```
+	/boot/firmware/config.txt
+	```
+
+	You need to add this line to the end of the file:
+
+	```
+	dtparam=krnbt=off
+	```
+	
+	You then need to reboot. This adds the Bluetooth device to `/dev`.
+
+2. Find the the Node-RED service definition in your `docker-compose.yml`:
+
+	* Add the following mapping to the `volumes:` clause:
+	
+		```yaml
+		- /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+		```
+	
+	* Add the following `devices:` clause:
+	
+		```yaml
+		devices:
+		  - "/dev/serial1:/dev/serial1"
+		  - "/dev/vcio:/dev/vcio"
+		  - "/dev/gpiomem:/dev/gpiomem"
+		```
+
+3. Recreate the Node-RED container:
+
+	``` console
+	$ cd ~/IOTstack
+	$ docker-compose up -d nodered
+	```
+
+Notes:
+
+* These changes are *specific* to the Raspberry Pi. If you need Bluetooth support on non-Pi hardware, you will need to figure out the details for your chosen platform.
+* Historically, `/dev/ttyAMA0` meant the serial interface. Subsequently, it came to mean the Bluetooth interface but only where Bluetooth hardware was present, otherwise it still meant the serial interface.
+
+	On Bookworm and later, if it is present, `/dev/ttyAMA1` means the Bluetooth Interface.
+	
+	On Bullseye and later, `/dev/serial1` is a symbolic link pointing to whichever of `/dev/ttyAMA0` or `/dev/ttyAMA1` means the Bluetooth interface. This means that `/dev/serial1` is the most reliable way of referring to the Bluetooth Interface. That's why it appears in the `devices:` clause above.
 
 ## Sharing files between Node-RED and the Raspberry Pi { #fileSharing }
 
@@ -1457,27 +1553,3 @@ All remaining lines of your original *Dockerfile* should be left as-is.
 ### Applying the new syntax { #july2022build }
 
 Run the [re-building the local Node-RED image](#rebuildNodeRed) commands.
-
-## Bluetooth support { #bluetoothSupport }
-
-If you enable the `node-red-contrib-generic-ble` add on node, you will also need to make the following changes to the Node-RED service definition in your `docker-compose.yml`:
-
-* Add the following mapping to the `volumes:` clause:
-
-	```yaml
-	- /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
-	```
-
-* Add the following `devices:` clause:
-
-	```yaml
-	devices:
-	  - "/dev/serial1:/dev/serial1"
-	  - "/dev/vcio:/dev/vcio"
-	  - "/dev/gpiomem:/dev/gpiomem"
-	```
-
-Notes:
-
-* These changes are *specific* to the Raspberry Pi. If you need Bluetooth support on non-Pi hardware, you will need to figure out the details for your chosen platform.
-* Historically, `/dev/ttyAMA0` meant "the serial interface" on Raspberry Pis. Subsequently, it came to mean "the Bluetooth interface" where Bluetooth support was present. Now, `/dev/serial1` is used to mean "the Bluetooth interface".
