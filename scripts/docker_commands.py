@@ -22,7 +22,7 @@ def main():
 
   term = Terminal()
   hotzoneLocation = [7, 0] # Top text
-  
+
   def onResize(sig, action):
     global mainMenuList
     global currentMenuItemIndex
@@ -30,25 +30,25 @@ def main():
 
   def startStack():
     print("Start Stack:")
-    print("docker-compose up -d --remove-orphans")
-    subprocess.call("docker-compose up -d", shell=True)
+    print("docker compose up -d --remove-orphans")
+    subprocess.call("docker compose up -d", shell=True)
     print("")
     print("Stack Started")
     input("Process terminated. Press [Enter] to show menu and continue.")
     needsRender = 1
     return True
-  
+
   def restartStack():
     print("Restarting Stack...")
     print("Stop Stack:")
-    print("docker-compose down")
-    subprocess.call("docker-compose down", shell=True)
+    print("docker compose down")
+    subprocess.call("docker compose down", shell=True)
     print("")
     print("Start Stack:")
-    print("docker-compose up -d --remove-orphans")
-    subprocess.call("docker-compose up -d", shell=True)
-    # print("docker-compose restart")
-    # subprocess.call("docker-compose restart", shell=True)
+    print("docker compose up -d --remove-orphans")
+    subprocess.call("docker compose up -d", shell=True)
+    # print("docker compose restart")
+    # subprocess.call("docker compose restart", shell=True)
     print("")
     print("Stack Restarted")
     input("Process terminated. Press [Enter] to show menu and continue.")
@@ -57,8 +57,8 @@ def main():
 
   def stopStack():
     print("Stop Stack:")
-    print("docker-compose down")
-    subprocess.call("docker-compose down", shell=True)
+    print("docker compose down")
+    subprocess.call("docker compose down", shell=True)
     print("")
     print("Stack Stopped")
     input("Process terminated. Press [Enter] to show menu and continue.")
@@ -85,14 +85,14 @@ def main():
 
   def updateAllContainers():
     print("Update All Containers:")
-    print("docker-compose pull")
-    subprocess.call("docker-compose pull", shell=True)
+    print("docker compose pull")
+    subprocess.call("docker compose pull", shell=True)
     print("")
-    print("docker-compose build --no-cache --pull")
-    subprocess.call("docker-compose build --no-cache --pull", shell=True)
+    print("docker compose build --no-cache --pull")
+    subprocess.call("docker compose build --no-cache --pull", shell=True)
     print("")
-    print("docker-compose up -d")
-    subprocess.call("docker-compose up -d", shell=True)
+    print("docker compose up -d")
+    subprocess.call("docker compose up -d", shell=True)
     print("")
     print("docker system prune -f")
     subprocess.call("docker system prune -f", shell=True)
@@ -124,9 +124,9 @@ def main():
     print("Press CTRL+X or CTRL+C to exit.")
     time.sleep(2)
     print("")
-    print("docker-compose logs -f")
+    print("docker compose logs -f")
     time.sleep(0.5)
-    subprocess.call("docker-compose logs -f", shell=True)
+    subprocess.call("docker compose logs -f", shell=True)
     print("")
     time.sleep(0.5)
     input("Process terminated. Press [Enter] to show menu and continue.")
@@ -177,9 +177,8 @@ def main():
         toPrint += " "
 
       toPrint += "{bv}".format(bv=specialChars[renderMode]["borderVertical"])
-
       toPrint = term.center(toPrint)
-      
+
       print(toPrint)
 
 
