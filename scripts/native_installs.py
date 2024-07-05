@@ -23,7 +23,7 @@ def main():
 
   term = Terminal()
   hotzoneLocation = [7, 0] # Top text
-  
+
   def onResize(sig, action):
     global mainMenuList
     global currentMenuItemIndex
@@ -112,7 +112,7 @@ def main():
       toPrint += "{bv}".format(bv=specialChars[renderMode]["borderVertical"])
 
       toPrint = term.center(toPrint)
-      
+
       print(toPrint)
 
   def mainRender(needsRender, menu, selection):
@@ -150,8 +150,6 @@ def main():
           print(term.center(commonEmptyLine(renderMode)))
       print(term.center(commonEmptyLine(renderMode)))
       print(term.center(commonBottomBorder(renderMode)))
-
-
 
 
   def runSelection(selection):

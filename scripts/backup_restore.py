@@ -14,7 +14,7 @@ def main():
   global mainMenuList
   global currentMenuItemIndex
   global hideHelpText
-  
+
   try: # If not already set, then set it.
     hideHelpText = hideHelpText
   except:
@@ -128,12 +128,12 @@ def main():
       toPrint += "{bv}".format(bv=specialChars[renderMode]["borderVertical"])
 
       toPrint = term.center(toPrint)
-      
+
       print(toPrint)
 
   def mainRender(needsRender, menu, selection):
     term = Terminal()
-    
+
     if needsRender == 1:
       print(term.clear())
       print(term.move_y(6 - hotzoneLocation[0]))

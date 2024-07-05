@@ -20,7 +20,7 @@
 #     Either of these will run both backups.
 #
 #   ./scripts/backup.sh 2
-#     This will only produce a backup in the rollowing folder. It will be called 'backup_XX.tar.gz' where XX is the current day of the week (as an int)
+#     This will only produce a backup in the rollowing folder. It will be called 'backup_XX.tar.xz' where XX is the current day of the week (as an int)
 #
 #   sudo bash ./scripts/backup.sh 2 pi
 #     This will only produce a backup in the rollowing folder and change all the permissions to the 'pi' user.
@@ -52,11 +52,11 @@ BASEDIR=./backups
 TMPDIR=./.tmp
 DOW=$(date +%u)
 BASEBACKUPFILE="$(date +"%Y-%m-%d_%H%M")"
-TMPBACKUPFILE="$TMPDIR/backup/backup_$BASEBACKUPFILE.tar.gz"
+TMPBACKUPFILE="$TMPDIR/backup/backup_$BASEBACKUPFILE.tar.xz"
 BACKUPLIST="$TMPDIR/backup-list_$BASEBACKUPFILE.txt"
 LOGFILE="$BASEDIR/logs/backup_$BASEBACKUPFILE.log"
-BACKUPFILE="$BASEDIR/backup/backup_$BASEBACKUPFILE.tar.gz"
-ROLLING="$BASEDIR/rolling/backup_$DOW.tar.gz"
+BACKUPFILE="$BASEDIR/backup/backup_$BASEBACKUPFILE.tar.xz"
+ROLLING="$BASEDIR/rolling/backup_$DOW.tar.xz"
 
 [ -d ./backups ] || mkdir ./backups
 [ -d ./backups/logs ] || mkdir -p ./backups/logs
@@ -98,7 +98,7 @@ echo "./volumes/" >> $BACKUPLIST
 [ -f "./post_backup.sh" ] && echo "./post_backup.sh" >> $BACKUPLIST
 [ -f "./pre_backup.sh" ] && echo "./pre_backup.sh" >> $BACKUPLIST
 
-sudo tar -czf $TMPBACKUPFILE -T $BACKUPLIST >> $LOGFILE 2>&1
+sudo tar -cJf $TMPBACKUPFILE -T $BACKUPLIST >> $LOGFILE 2>&1
 
 [ -f "$ROLLING" ] && ROLLINGOVERWRITTEN=1 && rm -rf $ROLLING
 

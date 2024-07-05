@@ -21,7 +21,7 @@ def main():
     hideHelpText = False
 
   term = Terminal()
-  
+
   def setSwapinessTo0():
     print(term.clear())
     print("Set swapiness to 0:")
@@ -29,7 +29,7 @@ def main():
     print("")
     input("Process terminated. Press [Enter] to show menu and continue.")
     return True
-  
+
   def uninstallSwapfile():
     print(term.clear())
     print("Disabling swap...")
@@ -105,12 +105,12 @@ def main():
       toPrint += "{bv}".format(bv=specialChars[renderMode]["borderVertical"])
 
       toPrint = term.center(toPrint)
-      
+
       print(toPrint)
 
   def mainRender(needsRender, menu, selection):
     term = Terminal()
-    
+
     if needsRender == 1:
       print(term.clear())
       print(term.move_y(6 - hotzoneLocation[0]))

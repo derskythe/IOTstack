@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # Usage:
-# ./scripts/restore.sh [FILENAME=backup.tar.gz] {noask}
+# ./scripts/restore.sh [FILENAME=backup.tar.xz] {noask}
 
 # Examples:
 #   ./scripts/restore.sh
-#     Will restore from the backup file "./backups/backup.tar.gz"
+#     Will restore from the backup file "./backups/backup.tar.xz"
 #
-#   ./scripts/restore.sh some_other_backup.tar.gz
-#     Will restore from the backup file "./backups/some_other_backup.tar.gz"
+#   ./scripts/restore.sh some_other_backup.tar.xz
+#     Will restore from the backup file "./backups/some_other_backup.tar.xz"
 #
-#   ./scripts/restore.sh some_other_backup.tar.gz noask
-#     Will restore from the backup file "./backups/some_other_backup.tar.gz" and will not warn that data will be deleted.
+#   ./scripts/restore.sh some_other_backup.tar.xz noask
+#     Will restore from the backup file "./backups/some_other_backup.tar.xz" and will not warn that data will be deleted.
 #
 
 if [ -d "./menu.sh" ]; then
@@ -27,7 +27,7 @@ if [[ ! $PROCEED_WITH_RESTORE =~ ^[Yy]$ ]]; then
   exit 0
 fi
 
-RESTOREFILENAME="backup.tar.gz"
+RESTOREFILENAME="backup.tar.xz"
 RESTOREFILENAME=${1:-$RESTOREFILENAME}
 
 BASEDIR=./backups
@@ -35,7 +35,7 @@ TMPDIR=./.tmp
 BASERESTOREFILE="$(date +"%Y-%m-%d_%H%M")"
 RESTOREFILE="$BASEDIR/$RESTOREFILENAME"
 LOGFILE="$BASEDIR/logs/restore_$BASERESTOREFILE.log"
-BACKUPFILE="$BASEDIR/backup/backup_$BASERESTOREFILE.tar.gz"
+BACKUPFILE="$BASEDIR/backup/backup_$BASERESTOREFILE.tar.xz"
 
 [ -d ./backups ] || mkdir -p ./backups
 [ -d ./backups/logs ] || mkdir -p ./backups/logs
@@ -72,8 +72,7 @@ sudo rm -rf ./post_backup.sh >> $LOGFILE 2>&1
 sudo rm -rf ./post_restore.sh >> $LOGFILE 2>&1
 sudo rm -rf ./post_restore.sh >> $LOGFILE 2>&1
 
-sudo tar -zxvf \
-	$RESTOREFILE >> $LOGFILE 2>&1
+sudo tar -Jxvf $RESTOREFILE >> $LOGFILE 2>&1
 
 echo "" >> $LOGFILE
 
