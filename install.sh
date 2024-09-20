@@ -1,8 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+# version - MUST be exactly 7 characters!
+UPDATE="2024v02"
 
 echo "                                         "
-echo "  _____ ____ _______  _             _    "
-echo " |_   _/ __ \\__   __|| | installer | |   "
+echo "  _____ ____ _______  _  installer  _    "
+echo " |_   _/ __ \\__   __|| |  $UPDATE  | |  "
 echo "   | || |  | | | |___| |_ __ _  ___| | __"
 echo "   | || |  | | | / __| __/ _\` |/ __| |/ /"
 echo "  _| || |__| | | \\__ \\ || (_| | (__|   < "
@@ -21,17 +24,11 @@ echo "                                         "
 # overuse of sudo is a very common problem among new IOTstack users
 [ "$EUID" -eq 0 ] && echo "This script should NOT be run using sudo" && exit 1
 
-# the name of this script is
-SCRIPT=$(basename "$0")
-
 # this script should be run without arguments
-[ $# -ne 0 ] && echo "$SCRIPT parameter(s) $@ ignored"
+[ $# -ne 0 ] && echo "command line argument(s) $@ ignored"
 
 # assumption(s) which can be overridden
 IOTSTACK=${IOTSTACK:-"$HOME/IOTstack"}
-
-# form absolute path
-IOTSTACK=$(realpath "$IOTSTACK")
 
 # derived path(s) - note that the menu knows about most of these so
 # they can't just be changed without a lot of care.
@@ -113,7 +110,10 @@ function handle_exit() {
 	[ -d "$IOTSTACK" ] && echo "$1" >"$IOTSTACK_INSTALLER_HINT"
 
 	# inform the user
-	echo -n "$SCRIPT completed"
+	echo -n "install.sh completed"
+
+	# advise if should be re-run
+	[ $1 -ne 0 ] && echo -n " - but should be re-run"
 
 	# reboot takes precedence over logout
 	if [ "$REBOOT_REQUIRED" = "true" ] ; then
@@ -123,7 +123,16 @@ function handle_exit() {
 	elif [ "$LOGOUT_REQUIRED" = "true" ] ; then
 		echo " - a logout is required."
 		sleep 2
-		kill -HUP "$PPID"
+		# iterate ancestor processes
+		for ANCESTOR in $(ps -o ppid=) ; do
+			# find first process belonging to current user
+			if [ "$(ps -p $ANCESTOR -o user=)" = "$USER" ] ; then
+				# kill it
+				kill -HUP $ANCESTOR
+			fi
+		done
+		# should not reach this
+		sleep 2
 	fi
 
 	# exit as instructed
@@ -229,13 +238,6 @@ echo ""
 # is in the expected location, the necessary symlink can be created by
 # this script and then docker-compose will be installed "correctly".
 
-function is_running_OS_release() {
-	unset VERSION_CODENAME
-	[ -f "/etc/os-release" ] && eval $(grep "^VERSION_CODENAME=" /etc/os-release)
-	[ "$VERSION_CODENAME" = "$1" ] && return 0
-	return 1
-}
-
 function is_python_script() {
 	[ $(file -b "$1" | grep -c "^Python script") -gt 0 ] && return 0
 	return 1
@@ -305,13 +307,9 @@ else
 	echo "having installed docker and docker-compose without using the official"
 	echo "'convenience script'. You may be able to solve this problem by running"
 	if is_python_script "$COMPOSE_CMD_PATH" ; then
-		if is_running_OS_release bookworm ; then
-			echo "   \$ pip3 uninstall -y --break-system-packages docker-compose"
-			echo "   \$ sudo pip3 uninstall -y --break-system-packages docker-compose"
-		else
-			echo "   \$ pip3 uninstall -y docker-compose"
-			echo "   \$ sudo pip3 uninstall -y docker-compose"
-		fi
+		echo "   \$ export PIP_BREAK_SYSTEM_PACKAGES=1"
+		echo "   \$ pip3 uninstall -y docker-compose"
+		echo "   \$ sudo pip3 uninstall -y docker-compose"
 		echo "   (ignore any errors from those commands)"
 	else
 		echo "   \$ sudo apt purge -y docker-compose"
@@ -384,12 +382,8 @@ fi
 # implement menu requirements
 if [ -e "$IOTSTACK_MENU_REQUIREMENTS" ] ; then
 	echo -e "\nChecking and updating IOTstack dependencies (pip)" 
-	unset PYTHON_OPTIONS
-	if is_running_OS_release bookworm ; then
-		echo "Note: pip3 installs bypass externally-managed environment check"
-		PYTHON_OPTIONS="--break-system-packages"
-	fi
-	pip3 install -U $PYTHON_OPTIONS -r "$IOTSTACK_MENU_REQUIREMENTS"
+	echo "Note: pip3 installs bypass externally-managed environment check"
+	PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install -U -r "$IOTSTACK_MENU_REQUIREMENTS"
 fi
 
 # trigger re-creation of venv on next menu launch. Strictly speaking,
